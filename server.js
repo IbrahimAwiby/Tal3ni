@@ -15,19 +15,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // CORS configuration
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:5000",
-      "https://*.vercel.app",
-      process.env.FRONTEND_URL,
-    ].filter(Boolean),
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
-  })
-);
+app.use(cors());
 
 // Handle preflight requests
 app.options("*", cors());
@@ -112,7 +100,7 @@ app.get("/api", (req, res) => {
   });
 });
 
-// Serve only the main page
+// Serve frontend routes
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
@@ -135,18 +123,9 @@ app.use("/api/*", (req, res) => {
   });
 });
 
-// 404 handler for frontend routes - redirect to main page
+// 404 handler for frontend routes
 app.use("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-// Start the server - السطر الجديد ده
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`📱 Open your browser and go to: http://localhost:${PORT}`);
-  console.log(`🔍 API Health check: http://localhost:${PORT}/api/health`);
-  console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
 });
 
 // Export the app for Vercel serverless
