@@ -241,345 +241,375 @@
     </div>
 
     <script>
-      let genderChart, carTypeChart;
-      let dashboardData = null;
+            let genderChart, carTypeChart;
+            let dashboardData = null;
 
-      // Initialize dashboard
-      document.addEventListener("DOMContentLoaded", function () {
-        loadDashboard();
-        // Refresh every 30 seconds
-        setInterval(loadDashboard, 30000);
-      });
+            // Initialize dashboard
+            document.addEventListener("DOMContentLoaded", function () {
+              loadDashboard();
+              // Refresh every 30 seconds
+              setInterval(loadDashboard, 30000);
+            });
 
-      async function loadDashboard() {
-        showLoading();
-        try {
-          const response = await fetch("/api/users/analytics/dashboard");
+            async function loadDashboard() {
+          showLoading();
+          try {
+              // استخدام نفس الـ API base مثل script.js
+              const API_BASE = window.location.origin;
+              const response = await fetch(`${API_BASE}/api/users/analytics/dashboard`);
 
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+              if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+              }
+
+              const result = await response.json();
+
+              if (result.success) {
+                  dashboardData = result.data;
+                  updateStats(dashboardData);
+                  updateCharts(dashboardData);
+                  updateRecentUsers(dashboardData.recentUsers);
+                  updateLastUpdated();
+                  showDashboardContent();
+              } else {
+                  throw new Error(result.message);
+              }
+          } catch (error) {
+              console.error('Error loading dashboard:', error);
+              showToast('Error', 'Failed to load dashboard data', 'error');
+              showEmptyState();
+          } finally {
+              hideLoading();
           }
-
-          const result = await response.json();
-
-          if (result.success) {
-            dashboardData = result.data;
-            updateStats(dashboardData);
-            updateCharts(dashboardData);
-            updateRecentUsers(dashboardData.recentUsers);
-            updateLastUpdated();
-            showDashboardContent();
-          } else {
-            throw new Error(result.message);
-          }
-        } catch (error) {
-          console.error("Error loading dashboard:", error);
-          showToast("Error", "Failed to load dashboard data", "error");
-          showEmptyState();
-        } finally {
-          hideLoading();
-        }
       }
+              showLoading();
+              try {
+                const response = await fetch("/api/users/analytics/dashboard");
 
-      function refreshDashboard() {
-        loadDashboard();
-      }
+                if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+                }
 
-      function showLoading() {
-        document.getElementById("loadingDashboard").style.display = "block";
-        document.getElementById("dashboardContent").style.display = "none";
-      }
+                const result = await response.json();
 
-      function hideLoading() {
-        document.getElementById("loadingDashboard").style.display = "none";
-      }
-
-      function showDashboardContent() {
-        document.getElementById("dashboardContent").style.display = "block";
-      }
-
-      function showEmptyState() {
-        const dashboardContent = document.getElementById("dashboardContent");
-        dashboardContent.innerHTML = `
-                <div style="text-align: center; padding: 60px 20px; color: #666;">
-                    <i class="fas fa-chart-bar" style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;"></i>
-                    <h3>No Data Available</h3>
-                    <p>Start by adding users to see analytics and insights.</p>
-                    <a href="/" class="btn-primary" style="margin-top: 20px;">
-                        <i class="fas fa-plus"></i> Add Users
-                    </a>
-                </div>
-            `;
-        dashboardContent.style.display = "block";
-      }
-
-      function updateStats(data) {
-        const statsGrid = document.getElementById("statsGrid");
-        statsGrid.innerHTML = `
-                <div class="stat-card total">
-                    <i class="fas fa-users fa-2x"></i>
-                    <div class="stat-number">${data.totalUsers}</div>
-                    <p>Total Users</p>
-                </div>
-                <div class="stat-card male">
-                    <i class="fas fa-male fa-2x"></i>
-                    <div class="stat-number">${data.summary.male}</div>
-                    <p>Male Users</p>
-                </div>
-                <div class="stat-card female">
-                    <i class="fas fa-female fa-2x"></i>
-                    <div class="stat-number">${data.summary.female}</div>
-                    <p>Female Users</p>
-                </div>
-                <div class="stat-card recent">
-                    <i class="fas fa-user-plus fa-2x"></i>
-                    <div class="stat-number">${data.recentRegistrations}</div>
-                    <p>New This Week</p>
-                </div>
-            `;
-      }
-
-      function updateCharts(data) {
-        // Gender Chart - Pie Chart
-        const genderCtx = document
-          .getElementById("genderChart")
-          .getContext("2d");
-        if (genderChart) genderChart.destroy();
-
-        if (data.usersByGender && data.usersByGender.length > 0) {
-          genderChart = new Chart(genderCtx, {
-            type: "doughnut",
-            data: {
-              labels: data.usersByGender.map(
-                (g) => g._id.charAt(0).toUpperCase() + g._id.slice(1)
-              ),
-              datasets: [
-                {
-                  data: data.usersByGender.map((g) => g.count),
-                  backgroundColor: [
-                    "#4cc9f0",
-                    "#f72585",
-                    "#7209b7",
-                    "#4361ee",
-                    "#f8961e",
-                  ],
-                  borderWidth: 2,
-                  borderColor: "#fff",
-                  hoverOffset: 8,
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: "bottom",
-                  labels: {
-                    padding: 20,
-                    usePointStyle: true,
-                    font: {
-                      size: 12,
-                    },
-                  },
-                },
-                tooltip: {
-                  callbacks: {
-                    label: function (context) {
-                      const label = context.label || "";
-                      const value = context.raw || 0;
-                      const total = context.dataset.data.reduce(
-                        (a, b) => a + b,
-                        0
-                      );
-                      const percentage = Math.round((value / total) * 100);
-                      return `${label}: ${value} (${percentage}%)`;
-                    },
-                  },
-                },
-              },
-              cutout: "50%",
-            },
-          });
-        } else {
-          document.getElementById("genderChart").parentElement.innerHTML =
-            '<div class="no-data">No gender data available</div>';
-        }
-
-        // Car Type Chart - Bar Chart
-        const carTypeCtx = document
-          .getElementById("carTypeChart")
-          .getContext("2d");
-        if (carTypeChart) carTypeChart.destroy();
-
-        if (data.popularCarTypes && data.popularCarTypes.length > 0) {
-          // Sort car types by count for better visualization
-          const sortedCarTypes = [...data.popularCarTypes]
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 8); // Limit to top 8 for better readability
-
-          carTypeChart = new Chart(carTypeCtx, {
-            type: "bar",
-            data: {
-              labels: sortedCarTypes.map((c) =>
-                c._id.length > 15 ? c._id.substring(0, 15) + "..." : c._id
-              ),
-              datasets: [
-                {
-                  label: "Number of Users",
-                  data: sortedCarTypes.map((c) => c.count),
-                  backgroundColor: "#4361ee",
-                  borderWidth: 0,
-                  borderRadius: 4,
-                  borderSkipped: false,
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  grid: {
-                    display: true,
-                  },
-                  ticks: {
-                    stepSize: 1,
-                  },
-                },
-                x: {
-                  grid: {
-                    display: false,
-                  },
-                  ticks: {
-                    maxRotation: 45,
-                    minRotation: 45,
-                  },
-                },
-              },
-              plugins: {
-                legend: {
-                  display: false,
-                },
-                tooltip: {
-                  callbacks: {
-                    title: function (tooltipItems) {
-                      const index = tooltipItems[0].dataIndex;
-                      return sortedCarTypes[index]._id;
-                    },
-                  },
-                },
-              },
-            },
-          });
-        } else {
-          document.getElementById("carTypeChart").parentElement.innerHTML =
-            '<div class="no-data">No car type data available</div>';
-        }
-      }
-
-      function updateRecentUsers(users) {
-        const recentUsersList = document.getElementById("recentUsersList");
-
-        if (users.length === 0) {
-          recentUsersList.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #666;">
-                        <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
-                        <p>No users yet</p>
-                    </div>
-                `;
-          return;
-        }
-
-        recentUsersList.innerHTML = users
-          .map(
-            (user) => `
-                <div class="user-item">
-                    <div class="user-info">
-                        <strong>${escapeHtml(user.username)}</strong>
-                        <div class="user-meta">
-                            <i class="fas fa-phone"></i> ${escapeHtml(
-                              user.phoneNumber
-                            )} • 
-                            <i class="fas fa-car"></i> ${escapeHtml(
-                              user.carType
-                            )} (${escapeHtml(user.carNumber)})
-                        </div>
-                    </div>
-                    <div style="font-size: 0.8em; color: #999; text-align: right;">
-                        <div>${new Date(
-                          user.createdAt
-                        ).toLocaleDateString()}</div>
-                        <div>${new Date(
-                          user.createdAt
-                        ).toLocaleTimeString()}</div>
-                    </div>
-                </div>
-            `
-          )
-          .join("");
-      }
-
-      function updateLastUpdated() {
-        const lastUpdatedElement = document.getElementById("lastUpdated");
-        const now = new Date();
-        lastUpdatedElement.textContent = `Last updated: ${now.toLocaleTimeString()}`;
-      }
-
-      function showToast(title, message, type = "info") {
-        const toastContainer = document.getElementById("toast-container");
-        const toast = document.createElement("div");
-        toast.className = `toast ${type}`;
-
-        const icons = {
-          success: "fas fa-check-circle",
-          error: "fas fa-exclamation-circle",
-          warning: "fas fa-exclamation-triangle",
-          info: "fas fa-info-circle",
-        };
-
-        toast.innerHTML = `
-                <i class="${icons[type]}"></i>
-                <div class="toast-content">
-                    <h4>${escapeHtml(title)}</h4>
-                    <p>${escapeHtml(message)}</p>
-                </div>
-            `;
-
-        toastContainer.appendChild(toast);
-
-        setTimeout(() => toast.classList.add("show"), 100);
-
-        setTimeout(() => {
-          toast.classList.remove("show");
-          setTimeout(() => {
-            if (toast.parentNode) {
-              toast.parentNode.removeChild(toast);
+                if (result.success) {
+                  dashboardData = result.data;
+                  updateStats(dashboardData);
+                  updateCharts(dashboardData);
+                  updateRecentUsers(dashboardData.recentUsers);
+                  updateLastUpdated();
+                  showDashboardContent();
+                } else {
+                  throw new Error(result.message);
+                }
+              } catch (error) {
+                console.error("Error loading dashboard:", error);
+                showToast("Error", "Failed to load dashboard data", "error");
+                showEmptyState();
+              } finally {
+                hideLoading();
+              }
             }
-          }, 300);
-        }, 5000);
-      }
 
-      function escapeHtml(unsafe) {
-        if (typeof unsafe !== "string") return unsafe;
-        return unsafe
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
-      }
+            function refreshDashboard() {
+              loadDashboard();
+            }
 
-      // Handle window resize
-      window.addEventListener("resize", function () {
-        if (genderChart) {
-          genderChart.resize();
-        }
-        if (carTypeChart) {
-          carTypeChart.resize();
-        }
-      });
+            function showLoading() {
+              document.getElementById("loadingDashboard").style.display = "block";
+              document.getElementById("dashboardContent").style.display = "none";
+            }
+
+            function hideLoading() {
+              document.getElementById("loadingDashboard").style.display = "none";
+            }
+
+            function showDashboardContent() {
+              document.getElementById("dashboardContent").style.display = "block";
+            }
+
+            function showEmptyState() {
+              const dashboardContent = document.getElementById("dashboardContent");
+              dashboardContent.innerHTML = `
+                      <div style="text-align: center; padding: 60px 20px; color: #666;">
+                          <i class="fas fa-chart-bar" style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;"></i>
+                          <h3>No Data Available</h3>
+                          <p>Start by adding users to see analytics and insights.</p>
+                          <a href="/" class="btn-primary" style="margin-top: 20px;">
+                              <i class="fas fa-plus"></i> Add Users
+                          </a>
+                      </div>
+                  `;
+              dashboardContent.style.display = "block";
+            }
+
+            function updateStats(data) {
+              const statsGrid = document.getElementById("statsGrid");
+              statsGrid.innerHTML = `
+                      <div class="stat-card total">
+                          <i class="fas fa-users fa-2x"></i>
+                          <div class="stat-number">${data.totalUsers}</div>
+                          <p>Total Users</p>
+                      </div>
+                      <div class="stat-card male">
+                          <i class="fas fa-male fa-2x"></i>
+                          <div class="stat-number">${data.summary.male}</div>
+                          <p>Male Users</p>
+                      </div>
+                      <div class="stat-card female">
+                          <i class="fas fa-female fa-2x"></i>
+                          <div class="stat-number">${data.summary.female}</div>
+                          <p>Female Users</p>
+                      </div>
+                      <div class="stat-card recent">
+                          <i class="fas fa-user-plus fa-2x"></i>
+                          <div class="stat-number">${data.recentRegistrations}</div>
+                          <p>New This Week</p>
+                      </div>
+                  `;
+            }
+
+            function updateCharts(data) {
+              // Gender Chart - Pie Chart
+              const genderCtx = document
+                .getElementById("genderChart")
+                .getContext("2d");
+              if (genderChart) genderChart.destroy();
+
+              if (data.usersByGender && data.usersByGender.length > 0) {
+                genderChart = new Chart(genderCtx, {
+                  type: "doughnut",
+                  data: {
+                    labels: data.usersByGender.map(
+                      (g) => g._id.charAt(0).toUpperCase() + g._id.slice(1)
+                    ),
+                    datasets: [
+                      {
+                        data: data.usersByGender.map((g) => g.count),
+                        backgroundColor: [
+                          "#4cc9f0",
+                          "#f72585",
+                          "#7209b7",
+                          "#4361ee",
+                          "#f8961e",
+                        ],
+                        borderWidth: 2,
+                        borderColor: "#fff",
+                        hoverOffset: 8,
+                      },
+                    ],
+                  },
+                  options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: "bottom",
+                        labels: {
+                          padding: 20,
+                          usePointStyle: true,
+                          font: {
+                            size: 12,
+                          },
+                        },
+                      },
+                      tooltip: {
+                        callbacks: {
+                          label: function (context) {
+                            const label = context.label || "";
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce(
+                              (a, b) => a + b,
+                              0
+                            );
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} (${percentage}%)`;
+                          },
+                        },
+                      },
+                    },
+                    cutout: "50%",
+                  },
+                });
+              } else {
+                document.getElementById("genderChart").parentElement.innerHTML =
+                  '<div class="no-data">No gender data available</div>';
+              }
+
+              // Car Type Chart - Bar Chart
+              const carTypeCtx = document
+                .getElementById("carTypeChart")
+                .getContext("2d");
+              if (carTypeChart) carTypeChart.destroy();
+
+              if (data.popularCarTypes && data.popularCarTypes.length > 0) {
+                // Sort car types by count for better visualization
+                const sortedCarTypes = [...data.popularCarTypes]
+                  .sort((a, b) => b.count - a.count)
+                  .slice(0, 8); // Limit to top 8 for better readability
+
+                carTypeChart = new Chart(carTypeCtx, {
+                  type: "bar",
+                  data: {
+                    labels: sortedCarTypes.map((c) =>
+                      c._id.length > 15 ? c._id.substring(0, 15) + "..." : c._id
+                    ),
+                    datasets: [
+                      {
+                        label: "Number of Users",
+                        data: sortedCarTypes.map((c) => c.count),
+                        backgroundColor: "#4361ee",
+                        borderWidth: 0,
+                        borderRadius: 4,
+                        borderSkipped: false,
+                      },
+                    ],
+                  },
+                  options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        grid: {
+                          display: true,
+                        },
+                        ticks: {
+                          stepSize: 1,
+                        },
+                      },
+                      x: {
+                        grid: {
+                          display: false,
+                        },
+                        ticks: {
+                          maxRotation: 45,
+                          minRotation: 45,
+                        },
+                      },
+                    },
+                    plugins: {
+                      legend: {
+                        display: false,
+                      },
+                      tooltip: {
+                        callbacks: {
+                          title: function (tooltipItems) {
+                            const index = tooltipItems[0].dataIndex;
+                            return sortedCarTypes[index]._id;
+                          },
+                        },
+                      },
+                    },
+                  },
+                });
+              } else {
+                document.getElementById("carTypeChart").parentElement.innerHTML =
+                  '<div class="no-data">No car type data available</div>';
+              }
+            }
+
+            function updateRecentUsers(users) {
+              const recentUsersList = document.getElementById("recentUsersList");
+
+              if (users.length === 0) {
+                recentUsersList.innerHTML = `
+                          <div style="text-align: center; padding: 40px; color: #666;">
+                              <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                              <p>No users yet</p>
+                          </div>
+                      `;
+                return;
+              }
+
+              recentUsersList.innerHTML = users
+                .map(
+                  (user) => `
+                      <div class="user-item">
+                          <div class="user-info">
+                              <strong>${escapeHtml(user.username)}</strong>
+                              <div class="user-meta">
+                                  <i class="fas fa-phone"></i> ${escapeHtml(
+                                    user.phoneNumber
+                                  )} •
+                                  <i class="fas fa-car"></i> ${escapeHtml(
+                                    user.carType
+                                  )} (${escapeHtml(user.carNumber)})
+                              </div>
+                          </div>
+                          <div style="font-size: 0.8em; color: #999; text-align: right;">
+                              <div>${new Date(
+                                user.createdAt
+                              ).toLocaleDateString()}</div>
+                              <div>${new Date(
+                                user.createdAt
+                              ).toLocaleTimeString()}</div>
+                          </div>
+                      </div>
+                  `
+                )
+                .join("");
+            }
+
+            function updateLastUpdated() {
+              const lastUpdatedElement = document.getElementById("lastUpdated");
+              const now = new Date();
+              lastUpdatedElement.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+            }
+
+            function showToast(title, message, type = "info") {
+              const toastContainer = document.getElementById("toast-container");
+              const toast = document.createElement("div");
+              toast.className = `toast ${type}`;
+
+              const icons = {
+                success: "fas fa-check-circle",
+                error: "fas fa-exclamation-circle",
+                warning: "fas fa-exclamation-triangle",
+                info: "fas fa-info-circle",
+              };
+
+              toast.innerHTML = `
+                      <i class="${icons[type]}"></i>
+                      <div class="toast-content">
+                          <h4>${escapeHtml(title)}</h4>
+                          <p>${escapeHtml(message)}</p>
+                      </div>
+                  `;
+
+              toastContainer.appendChild(toast);
+
+              setTimeout(() => toast.classList.add("show"), 100);
+
+              setTimeout(() => {
+                toast.classList.remove("show");
+                setTimeout(() => {
+                  if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                  }
+                }, 300);
+              }, 5000);
+            }
+
+            function escapeHtml(unsafe) {
+              if (typeof unsafe !== "string") return unsafe;
+              return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+            }
+
+            // Handle window resize
+            window.addEventListener("resize", function () {
+              if (genderChart) {
+                genderChart.resize();
+              }
+              if (carTypeChart) {
+                carTypeChart.resize();
+              }
+            });
     </script>
   </body>
 </html>

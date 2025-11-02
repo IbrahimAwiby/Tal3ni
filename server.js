@@ -14,15 +14,32 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// CORS configuration
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:5000",
+      "https://*.vercel.app",
+      process.env.FRONTEND_URL,
+    ].filter(Boolean),
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+  })
+);
+
+// Handle preflight requests
+app.options("*", cors());
+
 // Middleware
-app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, "public")));
 
-// MongoDB connection with better error handling
+// MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI;
 
 const connectDB = async () => {
@@ -31,27 +48,27 @@ const connectDB = async () => {
       throw new Error("MONGODB_URI is not defined in environment variables");
     }
 
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
     console.log("✅ Connected to MongoDB Atlas");
   } catch (error) {
     console.error("❌ MongoDB connection error:", error.message);
-    // Don't exit process in serverless environment
   }
 };
 
 // Connect to database
 connectDB();
 
-// Import routes with error handling
+// Import routes
 let userRoutes;
 try {
   userRoutes = (await import("./routes/users.js")).default;
+  app.use("/api/users", userRoutes);
 } catch (error) {
   console.error("❌ Error importing user routes:", error);
-  userRoutes = express.Router(); // Fallback empty router
 }
-
-app.use("/api/users", userRoutes);
 
 // API Routes
 app.get("/api/health", async (req, res) => {
@@ -126,7 +143,7 @@ app.use("/api/*", (req, res) => {
   });
 });
 
-// 404 handler for frontend routes - serve index.html for SPA
+// 404 handler for frontend routes
 app.use("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });

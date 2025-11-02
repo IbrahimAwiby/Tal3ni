@@ -1,5 +1,20 @@
-// API Configuration
+// API Configuration - استخدام relative paths
 const API_BASE = window.location.origin;
+const API_URL = `${API_BASE}/api/users`;
+
+// أو استخدم هذا الكود الأكثر أماناً:
+const getAPIBase = () => {
+  // إذا كان في development، استخدم localhost وإلا استخدم الـ origin
+  if (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+  ) {
+    return "http://localhost:5000";
+  }
+  return window.location.origin;
+};
+
+const API_BASE = getAPIBase();
 const API_URL = `${API_BASE}/api/users`;
 
 // DOM elements
@@ -36,49 +51,50 @@ searchInput.addEventListener("input", handleSearch);
 
 // Initialize application
 function initializeApp() {
+  console.log("🚀 Initializing application...");
+  console.log("📡 API URL:", API_URL);
   loadUsers();
   setupRealTimeValidation();
   showToast("System", "Application loaded successfully!", "success");
-}
-
-// Setup real-time form validation
-function setupRealTimeValidation() {
-  const inputs = userForm.querySelectorAll("input, select");
-  inputs.forEach((input) => {
-    input.addEventListener("blur", validateField);
-    input.addEventListener("input", clearFieldError);
-  });
 }
 
 // Load all users
 async function loadUsers() {
   showLoading();
   try {
-    const response = await fetch(API_URL);
+    console.log("🔍 Fetching users from:", API_URL);
+    const response = await fetch(API_URL, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      mode: "cors",
+    });
+
+    console.log("📡 Response status:", response.status);
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(
+        `HTTP error! status: ${response.status} - ${response.statusText}`
+      );
     }
 
     const result = await response.json();
+    console.log("📊 Users data:", result);
 
     if (result.success) {
-      allUsers = result.data;
+      allUsers = result.data || [];
       currentUsers = [...allUsers];
       displayUsers(allUsers);
       updateUserCount(allUsers.length);
       updateListCount();
       showToast("Success", `Loaded ${allUsers.length} users`, "success");
     } else {
-      throw new Error(result.message);
+      throw new Error(result.message || "Unknown error occurred");
     }
   } catch (error) {
-    console.error("Error loading users:", error);
-    showToast(
-      "Error",
-      "Failed to load users. Please check your connection.",
-      "error"
-    );
+    console.error("❌ Error loading users:", error);
+    showToast("Error", `Failed to load users: ${error.message}`, "error");
     allUsers = [];
     currentUsers = [];
     displayUsers([]);
