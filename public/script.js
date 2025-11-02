@@ -1,10 +1,5 @@
-// API Configuration - استخدام relative paths
-const API_BASE = window.location.origin;
-const API_URL = `${API_BASE}/api/users`;
-
-// أو استخدم هذا الكود الأكثر أماناً:
+// API Configuration
 const getAPIBase = () => {
-  // إذا كان في development، استخدم localhost وإلا استخدم الـ origin
   if (
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1"
@@ -55,32 +50,38 @@ function initializeApp() {
   console.log("📡 API URL:", API_URL);
   loadUsers();
   setupRealTimeValidation();
-  showToast("System", "Application loaded successfully!", "success");
+}
+
+// Setup real-time validation
+function setupRealTimeValidation() {
+  const fields = [
+    "username",
+    "phoneNumber",
+    "birthDate",
+    "gender",
+    "carNumber",
+    "carType",
+  ];
+  fields.forEach((field) => {
+    const element = document.getElementById(field);
+    if (element) {
+      element.addEventListener("blur", validateField);
+      element.addEventListener("input", clearFieldError);
+    }
+  });
 }
 
 // Load all users
 async function loadUsers() {
   showLoading();
   try {
-    console.log("🔍 Fetching users from:", API_URL);
-    const response = await fetch(API_URL, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      mode: "cors",
-    });
-
-    console.log("📡 Response status:", response.status);
+    const response = await fetch(API_URL);
 
     if (!response.ok) {
-      throw new Error(
-        `HTTP error! status: ${response.status} - ${response.statusText}`
-      );
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const result = await response.json();
-    console.log("📊 Users data:", result);
 
     if (result.success) {
       allUsers = result.data || [];
@@ -90,7 +91,7 @@ async function loadUsers() {
       updateListCount();
       showToast("Success", `Loaded ${allUsers.length} users`, "success");
     } else {
-      throw new Error(result.message || "Unknown error occurred");
+      throw new Error(result.message || "Failed to load users");
     }
   } catch (error) {
     console.error("❌ Error loading users:", error);
@@ -269,7 +270,8 @@ function validateForm() {
   ];
 
   fields.forEach((field) => {
-    if (!validateField({ target: document.getElementById(field) })) {
+    const element = document.getElementById(field);
+    if (!validateField({ target: element })) {
       isValid = false;
     }
   });

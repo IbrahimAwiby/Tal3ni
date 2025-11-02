@@ -222,57 +222,5 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// GET analytics dashboard
-router.get("/analytics/dashboard", async (req, res) => {
-  try {
-    const totalUsers = await User.countDocuments();
-
-    const usersByGender = await User.aggregate([
-      {
-        $group: {
-          _id: "$gender",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-
-    const recentUsers = await User.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select("username phoneNumber carType createdAt");
-
-    const carTypes = await User.aggregate([
-      {
-        $group: {
-          _id: "$carType",
-          count: { $sum: 1 },
-        },
-      },
-      { $sort: { count: -1 } },
-      { $limit: 10 },
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        totalUsers,
-        usersByGender,
-        recentUsers,
-        popularCarTypes: carTypes,
-        summary: {
-          male: usersByGender.find((g) => g._id === "male")?.count || 0,
-          female: usersByGender.find((g) => g._id === "female")?.count || 0,
-        },
-      },
-    });
-  } catch (err) {
-    console.error("Error fetching analytics:", err);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching analytics",
-      error: err.message,
-    });
-  }
-});
 
 export default router;
