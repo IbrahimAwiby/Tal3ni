@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Management System</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div id="toast-container"></div>
+
+    <div class="container">
+      <header>
+        <div class="header-content">
+          <i class="fas fa-users-cog"></i>
+          <h1>User Management System</h1>
+          <p>Manage users and their vehicles efficiently</p>
+          <div class="header-links">
+            <a href="/dashboard" class="btn-header">
+              <i class="fas fa-chart-line"></i> Dashboard
+            </a>
+            <a href="/api-docs" class="btn-header">
+              <i class="fas fa-code"></i> API Docs
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <div class="dashboard">
+        <div class="stats-card">
+          <div class="stat">
+            <i class="fas fa-users"></i>
+            <div class="stat-info">
+              <h3 id="totalUsers">0</h3>
+              <p>Total Users</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="main-content">
+        <div class="form-section">
+          <div class="section-header">
+            <h2><i class="fas fa-user-plus"></i> Add/Edit User</h2>
+          </div>
+          <form id="userForm">
+            <input type="hidden" id="userId" />
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="username">
+                  <i class="fas fa-user"></i> Username:
+                </label>
+                <input type="text" id="username" required />
+                <div class="error-message" id="usernameError"></div>
+              </div>
+
+              <div class="form-group">
+                <label for="phoneNumber">
+                  <i class="fas fa-phone"></i> Phone Number:
+                </label>
+                <input
+                  type="text"
+                  id="phoneNumber"
+                  placeholder="e.g., 01012345678"
+                  required
+                />
+                <div class="error-message" id="phoneError"></div>
+                <small class="input-hint"
+                  >Egyptian numbers only (010, 011, 012, 015)</small
+                >
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="birthDate">
+                  <i class="fas fa-calendar"></i> Birth Date:
+                </label>
+                <input type="date" id="birthDate" required />
+                <div class="error-message" id="birthDateError"></div>
+              </div>
+
+              <div class="form-group">
+                <label for="gender">
+                  <i class="fas fa-venus-mars"></i> Gender:
+                </label>
+                <select id="gender" required>
+                  <option value="">Select Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+                <div class="error-message" id="genderError"></div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="carNumber">
+                  <i class="fas fa-car"></i> Car Number:
+                </label>
+                <input
+                  type="text"
+                  id="carNumber"
+                  placeholder="Numbers only (1-8 digits)"
+                  required
+                />
+                <div class="error-message" id="carNumberError"></div>
+                <small class="input-hint">Numbers only, 1-8 digits</small>
+              </div>
+
+              <div class="form-group">
+                <label for="carType">
+                  <i class="fas fa-car-side"></i> Car Type:
+                </label>
+                <input
+                  type="text"
+                  id="carType"
+                  placeholder="e.g., Toyota Corolla"
+                  required
+                />
+                <div class="error-message" id="carTypeError"></div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="submitBtn" class="btn-primary">
+                <i class="fas fa-plus"></i> Add User
+              </button>
+              <button
+                type="button"
+                id="cancelBtn"
+                class="btn-secondary"
+                style="display: none"
+              >
+                <i class="fas fa-times"></i> Cancel
+              </button>
+              <button type="button" id="clearBtn" class="btn-warning">
+                <i class="fas fa-broom"></i> Clear
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="users-section">
+          <div class="section-header">
+            <h2><i class="fas fa-list"></i> Users List</h2>
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search users..."
+              />
+            </div>
+          </div>
+
+          <div class="list-controls">
+            <button id="refreshBtn" class="btn-info">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <span class="list-count"
+              >Showing <span id="shownCount">0</span> of
+              <span id="totalCount">0</span> users</span
+            >
+          </div>
+
+          <div class="loading-spinner" id="loadingSpinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading users...</p>
+          </div>
+          <div id="usersList"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

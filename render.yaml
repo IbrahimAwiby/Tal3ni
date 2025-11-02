@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: user-management-system
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        value: mongodb+srv://ibrahimawiby:445614897@cluster1.0pwo6.mongodb.net/user_management?retryWrites=true&w=majority
