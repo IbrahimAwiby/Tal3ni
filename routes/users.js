@@ -43,61 +43,20 @@ const userValidationRules = [
     .escape(),
 ];
 
-// GET all users with pagination
+// GET all users
 router.get("/", async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 100;
-    const skip = (page - 1) * limit;
-
-    const users = await User.find()
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    const totalUsers = await User.countDocuments();
-
+    const users = await User.find().sort({ createdAt: -1 });
     res.json({
       success: true,
       data: users,
-      pagination: {
-        page,
-        limit,
-        total: totalUsers,
-        pages: Math.ceil(totalUsers / limit),
-      },
+      count: users.length,
     });
   } catch (err) {
     console.error("Error fetching users:", err);
     res.status(500).json({
       success: false,
       message: "Error fetching users",
-      error: err.message,
-    });
-  }
-});
-
-// GET single user
-router.get("/:id", async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    res.json({
-      success: true,
-      data: user,
-    });
-  } catch (err) {
-    console.error("Error fetching user:", err);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching user",
       error: err.message,
     });
   }
@@ -140,6 +99,32 @@ router.post("/", userValidationRules, async (req, res) => {
     res.status(400).json({
       success: false,
       message: "Error creating user",
+      error: err.message,
+    });
+  }
+});
+
+// GET single user
+router.get("/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: user,
+    });
+  } catch (err) {
+    console.error("Error fetching user:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching user",
       error: err.message,
     });
   }
@@ -267,13 +252,6 @@ router.get("/analytics/dashboard", async (req, res) => {
       { $limit: 10 },
     ]);
 
-    const today = new Date();
-    const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-    const recentRegistrations = await User.countDocuments({
-      createdAt: { $gte: lastWeek },
-    });
-
     res.json({
       success: true,
       data: {
@@ -281,7 +259,6 @@ router.get("/analytics/dashboard", async (req, res) => {
         usersByGender,
         recentUsers,
         popularCarTypes: carTypes,
-        recentRegistrations,
         summary: {
           male: usersByGender.find((g) => g._id === "male")?.count || 0,
           female: usersByGender.find((g) => g._id === "female")?.count || 0,
